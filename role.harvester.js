@@ -102,8 +102,6 @@ var roleHarvester = {
 		{
 			// find the closest sources
 			const target = creep.pos.findClosestByRange(FIND_SOURCES_ACTIVE);
-			// for each item in the array, check if it is in range
-			// if can't reach any of them, unreserve this flag
 			if(target) {
 				if(creep.harvest(target) == ERR_NOT_IN_RANGE) {
 					//creep.moveTo(target);

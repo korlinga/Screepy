@@ -37,7 +37,7 @@ var roleSpawn = {
 			if (lvl == 0)
 			{
 				BuildThings('Roads');
-				BuildThings('Containers');
+				//BuildThings('Containers');
 			}
 			if (lvl == 1)
 			{
@@ -78,12 +78,12 @@ var roleSpawn = {
 						// create a path from the spawn to each flag
 						const path = startAtPos.pos.findPathTo((allMyFlags[flag].pos.x),(allMyFlags[flag].pos.y));
 						//write the path to the spawn's memory
-						spawn.memory.miningpath = Game.spawns[spawn].room.serializePath(path);
+						Game.spawns[spawn].memory.miningpath = Room.serializePath(path);
 					}
 					//create another path from spawn to the controller
 					const path2 = startAtPos.pos.findPathTo((controllerPos.x),(controllerPos.y));
-					//write the path to the spawn's memory
-					spawn.memory.controllerpath
+					//write the serialized path to the spawn's memory
+					Game.spawns[spawn].memory.controllerpath = Room.serializePath(path2);
 					//run the function to build roads with the now populated paths
 					BuildRoads();
 				}
@@ -102,12 +102,23 @@ var roleSpawn = {
 		}
 		function BuildRoads()
 		{
+			//get the serialized mining path
+			var miningPathSerialized = Game.spawns[spawn].memory.miningpath;
+			//get the serialized controller path
+			var controllerPathSerialized = Game.spawns[spawn].memory.controllerpath;
 			//get the serialized miningpath and deserialize it into an array
-			const builderPath = Game.spawns[spawn].room.deserializePath(Game.spawns[spawn].memory.miningpath);
+			const builderPath = Room.deserializePath(miningPathSerialized);
 			// for each stone in the path, build a road construction object
 			for(var stone in builderPath)
 			{
 				Game.spawns[spawn].room.createConstructionSite(builderPath[stone].x, builderPath[stone].y, STRUCTURE_ROAD);
+			}
+			//get the serialized controllerpath and deserialize it into an array
+			const controllerPath = Room.deserializePath(controllerPathSerialized);
+			// for each stone in the path, build a road construction object
+			for(var stone in controllerPath)
+			{
+				Game.spawns[spawn].room.createConstructionSite(controllerPath[stone].x, controllerPath[stone].y, STRUCTURE_ROAD);
 			}
 		}
 		function Maintenance()
