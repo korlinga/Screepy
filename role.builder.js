@@ -2,10 +2,13 @@ var roleBuilder = {
 
     /** @param {Creep} creep **/
     run: function(creep) {
-
+		if(creep.name.startsWith('Harvester') && creep.store[RESOURCE_ENERGY] == 0){
+            creep.memory.role = 'harvester';
+        }
 	    if(creep.memory.building && creep.store[RESOURCE_ENERGY] == 0) {
             creep.memory.building = false;
             creep.say('🔄 harvest');
+			//creep.memory.role = 'harvester';
 	    }
 	    if(!creep.memory.building && creep.store.getFreeCapacity() == 0) {
 	        creep.memory.building = true;
@@ -19,6 +22,10 @@ var roleBuilder = {
                     creep.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
                 }
             }
+			else
+			{
+				console.log('nothing to build');
+			}
 	    }
 	    else {
 	        var sources = creep.room.find(FIND_SOURCES);

@@ -1,16 +1,10 @@
 var roleHarvester = require('role.harvester');
 var roleUpgrader = require('role.upgrader');
 var roleBuilder = require('role.builder');
+var roleSpawn = require('role.spawn');
 
 module.exports.loop = function () {
-    
-    //var Spawn1 = "Spawn1";
-	// get my spawns
-	for(const i in Game.spawns)
-	{
-		var a = Game.spawns[i].name;
-	}
-	var Spawn1 = a;
+    var Spawn1 = "Spawn1";
 	var Room1 = "E24S1";
     //clear memory of dead things names
         for(var name in Memory.creeps) {
@@ -20,23 +14,26 @@ module.exports.loop = function () {
         }
     }
 
-    //spawn the things
-    //var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
-    var harvesters = _.filter(Game.creeps,(creep) => creep.name.startsWith('Harvester'));
-    //console.log('Harvesters: ' + harvesters.length);
-    //var builders = _.filter(Game.creeps, (creep) => creep.memory.role == 'builder');
+//-=Creep Spawns=-
+		//var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
+	// (1/2) identify available creeps by name
+    var harvesters = _.filter(Game.creeps,(creep) => creep.name.startsWith('Harvester'));	
+		//console.log('Harvesters: ' + harvesters.length);
+		//var builders = _.filter(Game.creeps, (creep) => creep.memory.role == 'builder');
     var builders = _.filter(Game.creeps,(creep) => creep.name.startsWith('Builder'));
-    //console.log('Builders: ' + builders.length);
-    //var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
+		//console.log('Builders: ' + builders.length);
+		//var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
     var upgraders = _.filter(Game.creeps,(creep) => creep.name.startsWith('Upgrader'));
-    //console.log('Upgraders: ' + upgraders.length);
-    
-    if(harvesters.length < 6) {
+		//console.log('Upgraders: ' + upgraders.length);
+		//var claimers = _.filter(Game.creeps,(creep) => creep.name.startsWith('Claimer'));
+    // (2/2) if there are less than allowed amount, spawn the screep
+		//TODO associate hardcoded number of creeps to something else (creep-inventory-module?)
+    if(harvesters.length < 4) {
         var newName = 'Harvester' + Game.time;
         console.log('Spawning new harvester: ' + newName);
         Game.spawns[Spawn1].spawnCreep([WORK,CARRY,MOVE], newName, 
             {memory: {role: 'harvester'}});
-    } else if(builders.length < 0) {
+    } else if(builders.length < 4) {
         var newName = 'Builder' + Game.time;
         console.log('Spawning new builder: ' + newName);
         Game.spawns[Spawn1].spawnCreep([WORK,CARRY,MOVE], newName, 
@@ -56,7 +53,13 @@ module.exports.loop = function () {
             Game.spawns[Spawn1].pos.y, 
             {align: 'left', opacity: 0.8});
     }
-    // find sources
+    /*
+	Create a flag named "MiningFlag x,y" at every plain spot next to a minable source
+		+ Only creates flags on plains
+		+ If the flag already exists, it does not build a new one
+		+ harvester's use the startsWith() function to reserve these flags
+	*/
+	// find sources
     const MiningHoles = Game.spawns[Spawn1].room.find(FIND_SOURCES);
 	const terrain = Game.map.getRoomTerrain(Room1);
     // for every hole found
@@ -103,17 +106,57 @@ module.exports.loop = function () {
 			}
 		}
     }
-	console.log('MY LEVEL IS ' + Game.spawns[Spawn1].room.controller.level);
 	
-    
-    //TODO - build construction projects on controller level up//
-    /*
-    const extensions = Game.spawns[Spawn1].room.find(FIND_MY_STRUCTURES, {
-        filter: { structureType: STRUCTURE_EXTENSION }
-    });
-    console.log(Spawn1 + ' has '+extensions.length+' extensions available');
-	console.log(Room.controller + ' Selfie ');
+	//Controller Level Check
+	var controllerLevel = Game.spawns[Spawn1].room.controller.level;
+	//run level tracking function
+	Game.spawns.Spawn1.memory.controllerlevel = controllerLevel;
+	//Testing memory write to game spawn memory write (IT WORKED)
+	//console.log('aaaaa' + Game.spawns[Spawn1].memory.controllerlevel);
+	// check if global memory value exists
+	
+		// if it does, compare lvl against value
+			// if lvl < value
+			// run constructionSites()
+			// lvl == value
+		// if it does not, lvl == value
+	//ContstructionLevelTracking(controllerLevel);
+	
+	function ContstructionLevelTracking(lvl)
+	{
+		console.log('My controller lvl is ' + lvl);
+		if (lvl >= 0)
+		{
+			ConstructionSites('Roads');
+			console.log('Activate 5 ConstructionSites(Containers)');
+		}
+		if (lvl >= 1)
+		{
+			console.log('Activate ConstructionSites(Spawn)');	
+		}
+		if (lvl >= 2)
+		{
+			console.log('Activate 5 ConstructionSites(Extensions)');
+			console.log('Activate the ConstructionSites(Ramparts)');
+			console.log('Activate the ConstructionSites(Walls)');
+		}
+		if (lvl >= 3)
+		{
+			console.log('yay, lvl 3');
+		}
+	}
+	
+	/*
+	function ConstructionSites_Roads()
+	{
+		const path = spawn.pos.findPathTo(source);	//identify path from spawn to source
+		Memory.path = Room.serializePath(path);		//write the path to global memory
+		//creep.moveByPath(Memory.path); 	//an example of how creeps will use this to move
+		//for each item in the array, build a construction site
+		Game.rooms.sim.createConstructionSite(10, 15, STRUCTURE_ROAD);	//set construction sites 
+	}
 	*/
+	
 	
     //tower behavior
     /*
@@ -144,5 +187,10 @@ module.exports.loop = function () {
         if(creep.memory.role == 'builder') {
             roleBuilder.run(creep);
         }
+    }
+	//call spawn roles
+    for(var eachSpawn in Game.spawns) {
+        var spawn = Game.spawns[eachSpawn].name;
+        roleSpawn.run(spawn);
     }
 }
