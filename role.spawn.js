@@ -1,9 +1,7 @@
 var roleSpawn = {
     run: function(spawn) {
-
 		// TYPE 1 FOR REPORT //
-		var report = 0;
-		
+		var report = 0;	
 		//Identify the Controller Level of the spawn's room
 		var controllerLevel = Game.spawns[spawn].room.controller.level;
 		
@@ -13,7 +11,7 @@ var roleSpawn = {
 		// if the spawn memory slot does not yet exist
 		//OR
 		// the controller leveled up and does not currently match the memory slot
-		if(!greyWare || greyWare != controllerLevel)
+		if(!greyWare || greyWare != controllerLevel) //		if(!greyWare || greyWare != controllerLevel)
 		{
 			//congrats on lvl up
 			console.log('Congratulations!  Level Up, Baby!');
@@ -34,10 +32,10 @@ var roleSpawn = {
 		//function for running construction jobs based on controller level
 		function ConstructionSites(lvl)
 		{
-			if (lvl == 0)
+			if (lvl >= 0)
 			{
 				BuildThings('Roads');
-				//BuildThings('Containers');
+				BuildThings('Containers');
 			}
 			if (lvl == 1)
 			{
@@ -60,10 +58,15 @@ var roleSpawn = {
 		//Build things en masse based off the building type
 		function BuildThings(thing)
 		{
+			// the room spawn object
 			var startAtPos = Game.spawns[spawn];
+			// the mining flag objects in an array
 			var allMyFlags = _.filter(Game.flags,(flag) => flag.name.startsWith('MiningLocation '));
+			// the controller pos
 			var controllerPos = Game.spawns[spawn].room.controller.pos;
+			// the location in the spawns memory storing the serialized path from the spawn to each mining flag
 			var miningPath = Game.spawns[spawn].memory.miningpath;
+			// the location in the spawns memory storing the serialized path from the spawn to the controller
 			var controllerPath = Game.spawns[spawn].memory.controllerpath;
 			
 			// if BuildThings('Roads')
@@ -97,7 +100,96 @@ var roleSpawn = {
 			// if BuildThings('Containers') 
 			else if (thing == 'Containers')
 			{
-				console.log('Build Container Here');
+				console.log('Building ' + thing);
+				//var get the number of containers in the room
+				const containerCount = Game.spawns[spawn].room.find(FIND_MY_STRUCTURES, {
+					filter: (structure) => {
+						return (structure.structureType == STRUCTURE_CONTAINER);
+					}
+				});
+				//get the number of construction sites for containers in the room
+				const containerConstSiteCount = Game.spawns[spawn].room.find(FIND_MY_CONSTRUCTION_SITES, {
+					filter: (structure) => {
+						return (structure.structureType == STRUCTURE_CONTAINER);
+					}
+				});
+				// if there are less than five
+				if((containerCount.length + containerConstSiteCount) < 5)
+				{
+					// identify mining flags
+					var flags = _.filter(Game.flags,(flag) => flag.name.startsWith('MiningLocation '));
+					console.log(flags.length + ' Mining flags found in the room'); //DEBUG
+					// identify mineral resource (one in each room so no for loop required)
+					var mineralSource = Game.spawns[spawn].room.find(FIND_MINERALS); 
+					console.log(mineralSource.length + ' minerals found in the room'); //DEBUG
+					//get the room Terrain object
+					const terrain = Game.map.getRoomTerrain(Game.spawns[spawn].room.name);
+					console.log(terrain + ' TERRAIN WAS FOUND'); //DEBUG
+					//build a list of locations next to the mineralSource
+					var spotCheck = [];
+					//build a list of valid locations next to the mineralSource
+					var spot = [];
+					//push each position around the mineralSource to the spotCheck array
+					spotCheck.push([mineralSource[0].pos.x,mineralSource[0].pos.y+1]);
+					spotCheck.push([mineralSource[0].pos.x,mineralSource[0].pos.y-1]);
+					spotCheck.push([mineralSource[0].pos.x-1,mineralSource[0].pos.y]);
+					spotCheck.push([mineralSource[0].pos.x-1,mineralSource[0].pos.y+1]);
+					spotCheck.push([mineralSource[0].pos.x-1,mineralSource[0].pos.y-1]);
+					spotCheck.push([mineralSource[0].pos.x+1,mineralSource[0].pos.y]);
+					spotCheck.push([mineralSource[0].pos.x+1,mineralSource[0].pos.y+1]);
+					spotCheck.push([mineralSource[0].pos.x+1,mineralSource[0].pos.y-1]);
+					console.log(spotCheck.length + ' is how long spotCheck array is'); //DEBUG
+					//for each item in the spotCheck[] array, fill in the pos and push to spot[] array
+					for (var z in spotCheck){
+						switch(terrain.get(spotCheck[z][0],spotCheck[z][1])) {
+							case TERRAIN_MASK_WALL:
+								break;
+							case TERRAIN_MASK_SWAMP:
+								break;
+							case 0:
+								spot.push(spotCheck[z]);
+								break;
+						}
+					}
+					console.log(spot.length + 'is the length of the spot[] array'); //DEBUG
+					//create an empty array for final buildable locations
+					var buildContainersHere = [];
+					
+					//push the first item from the spot[] array to the final buildable location
+					buildContainersHere.push(spot[0]);
+					console.log(buildContainersHere.length + ' is this long after one push from the spot array'); //DEBUG
+					//for the next four final build locations added to the buildContainersHere[] array, loop 4 times and push
+					//a random flag into the array, removing it from the flags[] array using splice()
+					for(var i = 0; i<4; i++)
+					{
+						// choose a random number from the flag array length
+						const random = Math.floor(Math.random() * flags.length);
+						//add the flag from the random position above to the final buildable location array
+						buildContainersHere.push([flags[random].pos.x,flags[random].pos.y]);
+						//remove the random flag from the flags array
+						flags.splice(random,1);
+					}
+					console.log(buildContainersHere.length + 'is this long after 4 more pushes from the flag array'); //DEBUG
+					console.log(buildContainersHere); //DEBUG
+					// for each item in buildContainersHere[] array, create a Container construction site at the plains terrain
+
+					for (var point in buildContainersHere)
+					{
+						switch(Game.spawns[spawn].room.createConstructionSite(buildContainersHere[point][0],buildContainersHere[point][1],STRUCTURE_CONTAINER))
+						{
+							case -3:
+								testing = 'ERR_NAME_EXISTS error';
+								break;
+							case -8:
+								testing = 'ERR_FULL error';
+								break;
+							case -10:
+								testing = 'ERR_INVALID_ARGS error';
+								break;
+						}
+					}
+
+				}
 			}
 		}
 		function BuildRoads()
@@ -120,6 +212,10 @@ var roleSpawn = {
 			{
 				Game.spawns[spawn].room.createConstructionSite(controllerPath[stone].x, controllerPath[stone].y, STRUCTURE_ROAD);
 			}
+		}
+		function BuildContainers()
+		{
+			
 		}
 		function Maintenance()
 		{

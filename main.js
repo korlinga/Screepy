@@ -28,12 +28,12 @@ module.exports.loop = function () {
 		//var claimers = _.filter(Game.creeps,(creep) => creep.name.startsWith('Claimer'));
     // (2/2) if there are less than allowed amount, spawn the screep
 		//TODO associate hardcoded number of creeps to something else (creep-inventory-module?)
-    if(harvesters.length < 4) {
+    if(harvesters.length < 1) {
         var newName = 'Harvester' + Game.time;
         console.log('Spawning new harvester: ' + newName);
         Game.spawns[Spawn1].spawnCreep([WORK,CARRY,MOVE], newName, 
             {memory: {role: 'harvester'}});
-    } else if(builders.length < 4) {
+    } else if(builders.length < 5) {
         var newName = 'Builder' + Game.time;
         console.log('Spawning new builder: ' + newName);
         Game.spawns[Spawn1].spawnCreep([WORK,CARRY,MOVE], newName, 
